@@ -12,6 +12,7 @@ import logging
 from app.db.database import get_db
 from app.models.project import Project
 from app.models.ai_analysis import AIAnalysis, AIProvider, AnalysisType
+from app.models.notification import NotificationType, NotificationSeverity
 from app.models.user import User
 from app.schemas.analysis import (
     AIAnalysisRequest,
@@ -25,6 +26,7 @@ from app.middleware.auth import get_current_user
 from app.services.openai_service import OpenAIService
 from app.services.gemini_service import GeminiService
 from app.services.suggestion_service import SuggestionService
+from app.services.notification_service import NotificationService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -99,6 +101,21 @@ async def analyze_full_project(
         await db.refresh(ai_analysis)
         
         logger.info(f"✅ Análise completa realizada: Projeto {project.id}, Score: {combined_score}")
+
+        await NotificationService.create_notification(
+            db,
+            user_id=current_user.id,
+            title="Análise inteligente concluída",
+            message=f"O projeto \"{project.title}\" recebeu uma nova análise combinada.",
+            notification_type=NotificationType.AI_ANALYSIS_COMPLETED,
+            severity=NotificationSeverity.SUCCESS,
+            data={
+                "project_id": str(project.id),
+                "analysis_id": str(ai_analysis.id),
+                "score": combined_score,
+            },
+            action_url=f"/dashboard/projects/{project.id}?tab=analysis",
+        )
         
         return AIAnalysisResponse.model_validate(ai_analysis)
         

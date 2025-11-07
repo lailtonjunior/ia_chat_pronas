@@ -22,6 +22,8 @@ from app.middleware.auth import get_current_user
 from app.services.pdf_processor import PDFProcessor
 from app.services.openai_service import OpenAIService
 from app.services.gemini_service import GeminiService
+from app.services.notification_service import NotificationService
+from app.models.notification import NotificationType, NotificationSeverity
 from app.config import settings
 
 router = APIRouter()
@@ -229,6 +231,26 @@ async def analyze_document(
             await db.refresh(project)
         
         logger.info(f"✅ Documento analisado: {document_id}")
+
+        notification_message = (
+            f"O documento \"{document.original_filename}\" foi importado e analisado."
+        )
+        notification_data = {
+            "document_id": str(document.id),
+            "project_id": str(project.id) if project else None,
+            "create_project": create_project,
+        }
+
+        await NotificationService.create_notification(
+            db,
+            user_id=current_user.id,
+            title="Importação concluída",
+            message=notification_message,
+            notification_type=NotificationType.DOCUMENT_IMPORTED,
+            severity=NotificationSeverity.INFO,
+            data=notification_data,
+            action_url=f"/dashboard/projects/{project.id}" if project else None,
+        )
         
         return {
             "message": "Análise concluída com sucesso",

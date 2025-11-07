@@ -11,6 +11,7 @@ import logging
 
 from app.db.database import get_db
 from app.models.project import Project, ProjectStatus
+from app.models.notification import NotificationType, NotificationSeverity
 from app.models.user import User
 from app.schemas.project import (
     ProjectCreate, ProjectUpdate, ProjectResponse,
@@ -18,6 +19,7 @@ from app.schemas.project import (
 )
 from app.middleware.auth import get_current_user
 from app.services.project_service import ProjectService  # ✅ ADICIONADO
+from app.services.notification_service import NotificationService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -171,7 +173,8 @@ async def update_project(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Projeto não encontrado"
             )
-        
+
+        previous_status = project.status
         # Atualizar campos
         update_data = project_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -184,6 +187,25 @@ async def update_project(
         await db.refresh(project)
         
         logger.info(f"✅ Projeto atualizado: {project.id}")
+
+        if "status" in update_data and project.status != previous_status:
+            await NotificationService.create_notification(
+                db,
+                user_id=current_user.id,
+                title="Status do projeto atualizado",
+                message=(
+                    f"O projeto \"{project.title}\" mudou de "
+                    f"{previous_status.value} para {project.status.value}."
+                ),
+                notification_type=NotificationType.PROJECT_STATUS_UPDATED,
+                severity=NotificationSeverity.INFO,
+                data={
+                    "project_id": str(project.id),
+                    "previous_status": previous_status.value,
+                    "current_status": project.status.value,
+                },
+                action_url=f"/dashboard/projects/{project.id}",
+            )
         return ProjectResponse.model_validate(project)
         
     except HTTPException:

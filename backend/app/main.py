@@ -14,7 +14,7 @@ from datetime import datetime
 # Imports locais
 from app.config import settings
 from app.db.database import engine, init_db
-from app.routes import auth, projects, documents, ai_analysis, websocket_route
+from app.routes import auth, projects, documents, ai_analysis, websocket_route, notifications
 from app.middleware.cors import setup_cors
 
 # Configurar logging
@@ -88,6 +88,7 @@ app.include_router(projects.router, prefix="/api/projects", tags=["Projetos"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documentos"])
 app.include_router(ai_analysis.router, prefix="/api/ai", tags=["Análise IA"])
 app.include_router(websocket_route.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notificações"])
 
 # ============================================
 # TRATAMENTO DE ERROS GLOBAL

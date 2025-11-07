@@ -10,6 +10,13 @@ from app.models.user import User
 from app.models.project import Project, ProjectStatus, ProjectType
 from app.models.document import Document
 from app.models.ai_analysis import AIAnalysis, AIProvider, AnalysisType
+from app.models.notification import (
+    Notification,
+    NotificationType,
+    NotificationChannel,
+    NotificationSeverity,
+    NotificationPreference,
+)
 
 # Garantir que o Base.metadata tenha todos os models
 __all__ = [
@@ -22,4 +29,9 @@ __all__ = [
     "AIAnalysis",
     "AIProvider",
     "AnalysisType",
+    "Notification",
+    "NotificationType",
+    "NotificationChannel",
+    "NotificationSeverity",
+    "NotificationPreference",
 ]

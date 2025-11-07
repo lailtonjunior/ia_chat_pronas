@@ -15,6 +15,8 @@ from app.models.ai_analysis import AIAnalysis, AIProvider, AnalysisType
 from app.models.document import Document
 from app.services.openai_service import OpenAIService
 from app.services.gemini_service import GeminiService
+from app.services.notification_service import NotificationService
+from app.models.notification import NotificationType, NotificationSeverity
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +127,21 @@ class ProjectService:
             await db.refresh(project)
 
             logger.info(f"✅ Análise automática concluída: {project_id}")
+
+            await NotificationService.create_notification(
+                db,
+                user_id=project.user_id,
+                title="Análise automática concluída",
+                message=f"O projeto \"{project.title}\" recebeu uma nova análise automática.",
+                notification_type=NotificationType.AI_ANALYSIS_COMPLETED,
+                severity=NotificationSeverity.SUCCESS,
+                data={
+                    "project_id": str(project.id),
+                    "combined_score": project.combined_score,
+                    "analysis_type": "auto",
+                },
+                action_url=f"/dashboard/projects/{project.id}?tab=analysis",
+            )
 
             return {
                 "openai": openai_result,
