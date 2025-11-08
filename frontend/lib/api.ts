@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios'
+import type { NotificationList, NotificationPreferences } from '@/types/notification'
 
 let apiClient: AxiosInstance
 
@@ -94,5 +95,22 @@ export const api = {
         message,
         conversation_history: history,
       }),
+  },
+
+  // Notifications
+  notifications: {
+    list: (status: 'all' | 'read' | 'unread' = 'all', page = 1, perPage = 20) =>
+      getApiClient().get<NotificationList>('/api/notifications/', {
+        params: {
+          status_filter: status,
+          page,
+          per_page: perPage,
+        },
+      }),
+    markRead: (id: string) => getApiClient().post(`/api/notifications/${id}/read`),
+    markAll: () => getApiClient().post('/api/notifications/read-all'),
+    getPreferences: () => getApiClient().get<NotificationPreferences>('/api/notifications/preferences'),
+    updatePreferences: (payload: Partial<NotificationPreferences>) =>
+      getApiClient().put<NotificationPreferences>('/api/notifications/preferences', payload),
   },
 }

@@ -1,11 +1,9 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
-import { useState } from 'react'
+import { Search } from 'lucide-react'
+import NotificationCenter from '@/components/notifications/NotificationCenter'
 
 export default function Header() {
-  const [notifications] = useState(0)
-
   return (
     <header className="bg-white border-b px-8 py-4 flex items-center justify-between">
       {/* Search */}
@@ -22,15 +20,7 @@ export default function Header() {
 
       {/* Right Section */}
       <div className="flex items-center gap-6 ml-8">
-        {/* Notifications */}
-        <div className="relative">
-          <button className="relative text-gray-600 hover:text-gray-900 transition-colors">
-            <Bell className="w-6 h-6" />
-            {notifications > 0 && (
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-600 rounded-full"></span>
-            )}
-          </button>
-        </div>
+        <NotificationCenter />
 
         {/* Version */}
         <div className="text-sm text-gray-600 border-l pl-6">
