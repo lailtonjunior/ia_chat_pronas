@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     REDIS_HOST: str = Field("redis", description="Host do Redis")
     REDIS_PORT: int = Field(6379, description="Porta do Redis")
     REDIS_PASSWORD: str = Field(..., description="Senha do Redis")
+    REDIS_DB: int = Field(0, description="Database do Redis")
+
+    # ============================================
+    # CELERY
+    # ============================================
+    CELERY_BROKER_URL: Optional[str] = None
+    CELERY_RESULT_BACKEND: Optional[str] = None
     
     # ============================================
     # OPENAI - MODELO FINE-TUNED
@@ -104,6 +111,23 @@ class Settings(BaseSettings):
     # ============================================
     RATE_LIMIT_PER_MINUTE: int = Field(60, description="Limite de requisições por minuto")
     SESSION_TIMEOUT_MINUTES: int = Field(120, description="Timeout de sessão em minutos")
+    REQUIRE_2FA: bool = Field(False, description="Se true, força 2FA para todos")
+
+    # ============================================
+    # E-MAIL
+    # ============================================
+    EMAIL_FROM: str = Field("notif@srv1062121.hstgr.cloud", description="Remetente padrão de notificações")
+    EMAIL_PROVIDER: str = Field("ses", description="Provider de e-mail (ex: ses, sendgrid)")
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_REGION_NAME: str = Field("us-east-1", description="Região AWS")
+    BACKUP_S3_BUCKET: Optional[str] = None
+
+    # ============================================
+    # REPORTS
+    # ============================================
+    REPORT_STORAGE_BUCKET: Optional[str] = None
+    REPORT_URL_EXPIRATION_MINUTES: int = Field(60, description="Expiração de links de relatório")
     
     @model_validator(mode="after")
     def ensure_database_url(cls, values: "Settings") -> "Settings":
@@ -135,6 +159,13 @@ class Settings(BaseSettings):
             )
 
         values.DATABASE_URL = parsed_url.render_as_string(hide_password=False)
+
+        if not values.CELERY_BROKER_URL:
+            values.CELERY_BROKER_URL = (
+                f"redis://:{values.REDIS_PASSWORD}@{values.REDIS_HOST}:{values.REDIS_PORT}/{values.REDIS_DB}"
+            )
+        if not values.CELERY_RESULT_BACKEND:
+            values.CELERY_RESULT_BACKEND = values.CELERY_BROKER_URL
         return values
     
     class Config:

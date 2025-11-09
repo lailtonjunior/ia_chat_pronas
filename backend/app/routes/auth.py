@@ -3,6 +3,7 @@ Rotas de Autenticação - CORRIGIDO
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from google.oauth2 import id_token
@@ -20,7 +21,11 @@ from app.middleware.auth import get_current_user  # ✅ CORRIGIDO
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post("/google-login", response_model=GoogleLoginResponse)
+@router.post(
+    "/google-login",
+    response_model=GoogleLoginResponse,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
+)
 async def google_login(
     login_data: GoogleLoginRequest,
     db: AsyncSession = Depends(get_db)

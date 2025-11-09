@@ -12,6 +12,7 @@ from app.db.database import Base
 
 class Document(Base):
     __tablename__ = "documents"
+    __versioned__ = {}
     
     # Identificação
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

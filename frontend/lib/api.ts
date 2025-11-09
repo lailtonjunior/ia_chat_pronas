@@ -62,6 +62,22 @@ export const api = {
     update: (id: string, data: any) =>
       getApiClient().put(`/api/projects/${id}`, data),
     delete: (id: string) => getApiClient().delete(`/api/projects/${id}`),
+    submitForReview: (id: string, approverIds: string[], message?: string) =>
+      getApiClient().post(`/api/projects/${id}/submit_review`, {
+        approver_ids: approverIds,
+        message,
+      }),
+    approve: (id: string, comment?: string) =>
+      getApiClient().post(`/api/projects/${id}/approve`, { comment }),
+    reject: (id: string, comment?: string) =>
+      getApiClient().post(`/api/projects/${id}/reject`, { comment }),
+    getWorkflow: (id: string) => getApiClient().get(`/api/projects/${id}/workflow`),
+    listComments: (id: string) => getApiClient().get(`/api/projects/${id}/comments`),
+    addComment: (id: string, content: string) =>
+      getApiClient().post(`/api/projects/${id}/comments`, { content }),
+    requestExport: (id: string, format: 'pdf' | 'docx') =>
+      getApiClient().post(`/api/projects/${id}/export`, { format }),
+    listReports: (id: string) => getApiClient().get(`/api/projects/${id}/reports`),
   },
 
   // Documents
@@ -76,6 +92,16 @@ export const api = {
     },
     analyze: (documentId: string) =>
       getApiClient().post(`/api/documents/${documentId}/analyze`),
+    versions: (documentId: string) =>
+      getApiClient().get(`/api/documents/${documentId}/versions`),
+    diff: (documentId: string, versionA: number, versionB: number) =>
+      getApiClient().get(`/api/documents/${documentId}/diff`, {
+        params: { version_a: versionA, version_b: versionB },
+      }),
+    rollback: (documentId: string, transactionId: number) =>
+      getApiClient().post(`/api/documents/${documentId}/rollback`, {
+        transaction_id: transactionId,
+      }),
   },
 
   // AI Analysis

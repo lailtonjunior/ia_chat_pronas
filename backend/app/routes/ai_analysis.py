@@ -3,6 +3,7 @@ Rotas de Análise de IA
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
@@ -31,7 +32,11 @@ logger = logging.getLogger(__name__)
 
 suggestion_service = SuggestionService()
 
-@router.post("/analyze-full", response_model=AIAnalysisResponse)
+@router.post(
+    "/analyze-full",
+    response_model=AIAnalysisResponse,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
 async def analyze_full_project(
     analysis_request: AIAnalysisRequest,
     db: AsyncSession = Depends(get_db),
@@ -175,7 +180,11 @@ async def analyze_section(
             detail=f"Erro ao analisar seção: {str(e)}"
         )
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post(
+    "/chat",
+    response_model=ChatResponse,
+    dependencies=[Depends(RateLimiter(times=30, seconds=60))],
+)
 async def chat_with_ai(
     chat_request: ChatRequest,
     db: AsyncSession = Depends(get_db),
@@ -278,7 +287,11 @@ async def get_project_analyses(
         )
 
 
-@router.post("/suggestions", response_model=SuggestionResponse)
+@router.post(
+    "/suggestions",
+    response_model=SuggestionResponse,
+    dependencies=[Depends(RateLimiter(times=30, seconds=60))],
+)
 async def generate_ai_suggestion(
     suggestion_request: SuggestionRequest,
     db: AsyncSession = Depends(get_db),

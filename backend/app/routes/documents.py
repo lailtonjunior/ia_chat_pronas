@@ -22,6 +22,9 @@ from app.middleware.auth import get_current_user
 from app.services.pdf_processor import PDFProcessor
 from app.services.openai_service import OpenAIService
 from app.services.gemini_service import GeminiService
+from app.services.notification_service import NotificationService
+from app.services.document_service import DocumentVersionService
+from app.models.notification import NotificationType, NotificationSeverity
 from app.config import settings
 
 router = APIRouter()
@@ -229,7 +232,17 @@ async def analyze_document(
             await db.refresh(project)
         
         logger.info(f"✅ Documento analisado: {document_id}")
-        
+
+        await NotificationService.create_notification(
+            db,
+            user_id=current_user.id,
+            title="Documento analisado",
+            message=f"O documento {document.original_filename} foi processado com sucesso.",
+            notification_type=NotificationType.DOCUMENT_IMPORTED,
+            severity=NotificationSeverity.INFO,
+            data={"document_id": str(document.id), "project_id": str(project.id) if project else None},
+        )
+
         return {
             "message": "Análise concluída com sucesso",
             "document_id": str(document_id),
@@ -291,3 +304,43 @@ async def delete_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao deletar documento: {str(e)}"
         )
+
+
+@router.get("/{document_id}/versions")
+async def list_document_versions(
+    document_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    versions = await DocumentVersionService.list_versions(db, document_id)
+    return [
+        {
+            "transaction_id": version.transaction_id,
+            "operation_type": version.operation_type,
+            "updated_at": version.updated_at.isoformat() if version.updated_at else None,
+        }
+        for version in versions
+    ]
+
+
+@router.get("/{document_id}/diff")
+async def get_document_diff(
+    document_id: UUID,
+    version_a: int,
+    version_b: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    diff = await DocumentVersionService.get_diff(db, document_id, version_a, version_b)
+    return {"diff": diff}
+
+
+@router.post("/{document_id}/rollback")
+async def rollback_document(
+    document_id: UUID,
+    transaction_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    document = await DocumentVersionService.rollback(db, document_id, transaction_id)
+    return DocumentResponse.model_validate(document)

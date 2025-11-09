@@ -4,11 +4,13 @@ Configuração de conexão com banco de dados
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy_continuum import make_versioned, versioning_manager
 from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
+make_versioned(user_cls=None)
 
 class Base(DeclarativeBase):
     """Base declarativa para os modelos."""
@@ -97,7 +99,11 @@ async def init_db():
             drop_sql = f'DROP TYPE IF EXISTS "{enum_name}" CASCADE;'
             await conn.exec_driver_sql(drop_sql)
 
-        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(bind=sync_conn, checkfirst=True))
+        def create_all(sync_conn):
+            Base.metadata.create_all(bind=sync_conn, checkfirst=True)
+            versioning_manager.transaction_cls.__table__.create(sync_conn, checkfirst=True)
+
+        await conn.run_sync(create_all)
 
 
 async def close_db():

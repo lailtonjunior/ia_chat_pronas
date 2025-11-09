@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { initializeApiClient } from '@/lib/api'
+import { ReportPanel } from '@/components/Project/ReportPanel'
 
 interface Project {
   id: string
@@ -90,11 +91,25 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleExport = async (format: 'json' | 'pdf' | 'docx') => {
+  const handleExport = async (format: 'json') => {
     try {
-      toast.loading('Exportando...')
-      // Implementar export
-      toast.success(`Projeto exportado como ${format}`)
+      if (format === 'json' && project) {
+        const blob = new Blob([JSON.stringify(project, null, 2)], {
+          type: 'application/json',
+        })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${project.title || 'projeto'}.json`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+        toast.success('Projeto exportado em JSON.')
+        return
+      }
+
+      toast.info('Formato não suportado.')
     } catch (error) {
       console.error('Erro ao exportar:', error)
       toast.error('Erro ao exportar projeto')
@@ -167,27 +182,20 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
-            <div className="relative group">
-              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                <Download className="w-5 h-5" />
-              </button>
-              <div className="hidden group-hover:block absolute right-0 top-full mt-2 bg-white rounded-lg shadow z-10">
-                <button
-                  onClick={() => handleExport('json')}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                >
-                  JSON
-                </button>
-                <button
-                  onClick={() => handleExport('pdf')}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                >
-                  PDF
-                </button>
-              </div>
-            </div>
-
+          <div className="flex gap-2 flex-wrap">
+            <Link
+              href={`/dashboard/projects/${projectId}/approval`}
+              className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+            >
+              Workflow
+            </Link>
+            <button
+              onClick={() => handleExport('json')}
+              className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Exportar JSON
+            </button>
             <button
               onClick={() => setShowDeleteModal(true)}
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
@@ -296,6 +304,10 @@ export default function ProjectDetailPage() {
 
           {activeTab === 'chat' && <ChatInterface projectId={projectId} />}
         </div>
+      </div>
+
+      <div className="mt-10">
+        <ReportPanel projectId={project.id} />
       </div>
 
       {/* Delete Modal */}

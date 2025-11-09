@@ -10,11 +10,13 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
+import redis.asyncio as redis
+from fastapi_limiter import FastAPILimiter
 
 # Imports locais
 from app.config import settings
 from app.db.database import engine, init_db
-from app.routes import auth, projects, documents, ai_analysis, websocket_route
+from app.routes import auth, projects, documents, ai_analysis, websocket_route, notifications
 from app.middleware.cors import setup_cors
 
 # Configurar logging
@@ -25,6 +27,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Lifespan para gerenciar startup e shutdown
+redis_client = None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gerencia ciclo de vida da aplicação"""
@@ -36,12 +41,21 @@ async def lifespan(app: FastAPI):
     
     # Inicializar banco de dados
     await init_db()
+    global redis_client
+    redis_client = redis.from_url(
+        f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
+        encoding="utf-8",
+        decode_responses=True,
+    )
+    await FastAPILimiter.init(redis_client)
     logger.info("✅ Banco de dados inicializado")
     
     yield
     
     # Shutdown
     logger.info("👋 Encerrando aplicação...")
+    if redis_client:
+        await redis_client.close()
 
 # Criar aplicação FastAPI
 app = FastAPI(
@@ -88,6 +102,7 @@ app.include_router(projects.router, prefix="/api/projects", tags=["Projetos"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documentos"])
 app.include_router(ai_analysis.router, prefix="/api/ai", tags=["Análise IA"])
 app.include_router(websocket_route.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notificações"])
 
 # ============================================
 # TRATAMENTO DE ERROS GLOBAL

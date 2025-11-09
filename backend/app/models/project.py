@@ -15,6 +15,7 @@ class ProjectStatus(str, enum.Enum):
     """Status possíveis do projeto"""
     DRAFT = "draft"
     IN_ANALYSIS = "in_analysis"
+    IN_REVIEW = "in_review"
     REVIEWED = "reviewed"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -25,8 +26,16 @@ class ProjectType(str, enum.Enum):
     PRONAS = "PRONAS"
     PCD = "PCD"
 
+class SubmissionStatus(str, enum.Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    SUCCESS = "success"
+    FAILED = "failed"
+
+
 class Project(Base):
     __tablename__ = "projects"
+    __versioned__ = {}
     
     # Identificação
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -72,11 +81,19 @@ class Project(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     analyzed_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, nullable=True)
+    submission_status = Column(
+        SQLEnum(SubmissionStatus, native_enum=False, validate_strings=True),
+        default=SubmissionStatus.PENDING,
+    )
+    submission_id = Column(String(200), nullable=True)
     
     # Relacionamentos
     user = relationship("User", back_populates="projects")
     documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     ai_analyses = relationship("AIAnalysis", back_populates="project", cascade="all, delete-orphan")
+    approval_steps = relationship("ApprovalStep", back_populates="project", cascade="all, delete-orphan")
+    comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
+    reports = relationship("GeneratedReport", back_populates="project", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Project {self.title[:50]}... ({self.status.value})>"
