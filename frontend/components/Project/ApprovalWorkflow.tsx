@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import type { ProjectSummary, ProjectStatus } from '@/types/project'
-import type { ApprovalStep, ProjectComment, WorkflowSummary } from '@/types/workflow'
+import type { ProjectComment, WorkflowSummary } from '@/types/workflow'
 import { Loader2, Send, UserCheck, UserX } from 'lucide-react'
 
 interface ApprovalWorkflowProps {

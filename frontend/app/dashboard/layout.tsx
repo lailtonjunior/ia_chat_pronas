@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { redirect } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import ReactJoyride, { CallBackProps } from 'react-joyride'
 import Sidebar from '@/components/Layout/Sidebar'
 import Header from '@/components/Layout/Header'
 
@@ -13,42 +12,20 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { status } = useSession()
-  const [runTour, setRunTour] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const completed = localStorage.getItem('pronas_onboarding_done')
     if (!completed) {
-      setRunTour(true)
+      setShowGuide(true)
     }
   }, [])
 
-  const handleTourCallback = (data: CallBackProps) => {
-    if (['finished', 'skipped'].includes(data.status)) {
-      setRunTour(false)
-      localStorage.setItem('pronas_onboarding_done', 'true')
-    }
+  const dismissGuide = () => {
+    setShowGuide(false)
+    localStorage.setItem('pronas_onboarding_done', 'true')
   }
-
-  const tourSteps = [
-    {
-      target: 'body',
-      placement: 'center',
-      title: 'Bem-vindo!',
-      content: 'Conheça rapidamente os principais recursos do painel.',
-      disableBeacon: true,
-    },
-    {
-      target: '.sidebar-tour',
-      title: 'Menu principal',
-      content: 'Acesse dashboards, projetos e chat IA por aqui.',
-    },
-    {
-      target: '.notification-tour',
-      title: 'Notificações',
-      content: 'Atualizações em tempo real chegam aqui.',
-    },
-  ]
 
   if (status === 'loading') {
     return (
@@ -64,14 +41,36 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <ReactJoyride
-        steps={tourSteps}
-        run={runTour}
-        continuous
-        showProgress
-        showSkipButton
-        callback={handleTourCallback}
-      />
+      {showGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900">Bem-vindo ao painel PRONAS</h2>
+            <p className="text-sm text-gray-600">
+              Três passos rápidos para se orientar:
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+              <li>
+                Explore o menu lateral <span className="font-semibold">(área escura à esquerda)</span> para acessar projetos, IA e configurações.
+              </li>
+              <li>
+                O sino no canto superior direito mostra notificações em tempo real (workflow, IA, exportações).
+              </li>
+              <li>
+                Os projetos possuem abas dedicadas para editor, análises, chat e aprovação.
+              </li>
+            </ol>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                onClick={dismissGuide}
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Sidebar */}
       <div className="sidebar-tour flex">
         <Sidebar />
